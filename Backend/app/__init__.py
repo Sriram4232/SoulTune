@@ -1,0 +1,1 @@
+"""AI Music Curator backend."""

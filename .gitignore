@@ -1,0 +1,51 @@
+# Environment & Secrets
+.env
+.env.*
+*.env
+Backend/.env
+Frontend/.env
+cookies.txt
+
+# Python & Virtual Environments
+.venv/
+env/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Node & Frontend builds
+node_modules/
+Frontend/node_modules/
+dist/
+Frontend/dist/
+.npm/
+
+# Audio & Media files (prevent large binaries in git)
+fallback_songs/*
+!fallback_songs/metadata.example.json
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.ogg
+*.aac
+*.webm
+
+# Databases & Cache
+Backend/data/*.sqlite3*
+Backend/data/cache/
+data/*.sqlite3*
+*.sqlite
+*.sqlite3
+
+# Scratch & Logs
+tmp/
+*.log
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
