@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 const proxyConfig = {
-  target: 'http://127.0.0.1:8000',
+  target: 'https://soultune-zctz.onrender.com/',
   changeOrigin: false,
   configure: (proxy) => {
     proxy.on('error', (err, req, res) => {
