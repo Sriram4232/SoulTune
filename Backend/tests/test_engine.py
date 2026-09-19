@@ -114,6 +114,8 @@ def test_download_folder_tags_and_real_catalogue_selection(monkeypatch, tmp_path
     monkeypatch.setenv('LOCAL_MUSIC_DIR', str(tmp_path))
     monkeypatch.delenv('GROQ_API_KEY', raising=False)
     monkeypatch.delenv('LASTFM_API_KEY', raising=False)
+    monkeypatch.delenv('SPOTIFY_CLIENT_ID', raising=False)
+    monkeypatch.delenv('SPOTIFY_CLIENT_SECRET', raising=False)
     for folder, title in [('Energetic songs', 'Power'), ('sad songs', 'Heartbreak')]:
         directory = tmp_path / folder
         directory.mkdir()
