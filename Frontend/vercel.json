@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:match*",
+      "destination": "https://soultune-zctz.onrender.com/api/:match*"
+    }
+  ]
+}

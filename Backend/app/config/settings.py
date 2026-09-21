@@ -17,6 +17,22 @@ def _database_path() -> Path:
     return path if path.is_absolute() else BACKEND_ROOT / path
 
 
+def _cookie_secure_default() -> bool:
+    val = os.getenv("COOKIE_SECURE")
+    if val is not None:
+        return val.lower() == "true"
+    return os.getenv("ENVIRONMENT") == "production" or bool(os.getenv("RENDER"))
+
+
+def _cookie_samesite_default() -> str:
+    val = os.getenv("COOKIE_SAMESITE")
+    if val is not None:
+        return val.lower()
+    if os.getenv("ENVIRONMENT") == "production" or bool(os.getenv("RENDER")):
+        return "none"
+    return "lax"
+
+
 @dataclass
 class Settings:
     database_path: Path = field(default_factory=_database_path)
@@ -25,11 +41,11 @@ class Settings:
     allowed_origins: list[str] = field(default_factory=lambda: [
         origin.strip().rstrip("/") for origin in os.getenv(
             "ALLOWED_ORIGINS",
-            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8000,http://127.0.0.1:8000",
+            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:8000,http://127.0.0.1:8000,https://soul-tune-kappa.vercel.app,https://soultune-zctz.onrender.com",
         ).split(",") if origin.strip()
     ])
-    cookie_secure: bool = field(default_factory=lambda: os.getenv("COOKIE_SECURE", "false").lower() == "true")
-    cookie_samesite: str = field(default_factory=lambda: os.getenv("COOKIE_SAMESITE", "lax").lower())
+    cookie_secure: bool = field(default_factory=_cookie_secure_default)
+    cookie_samesite: str = field(default_factory=_cookie_samesite_default)
     session_hours: int = field(default_factory=lambda: int(os.getenv("SESSION_HOURS", "168")))
     guest_session_hours: int = field(default_factory=lambda: int(os.getenv("GUEST_SESSION_HOURS", "24")))
     environment: str = field(default_factory=lambda: os.getenv("ENVIRONMENT", "development"))

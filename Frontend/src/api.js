@@ -1,16 +1,102 @@
-export const API = 'https://soultune-zctz.onrender.com/api/v1';
+export const DEPLOYED_BACKEND_URL = 'https://soultune-zctz.onrender.com';
+export const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000';
+export const DEPLOYED_FRONTEND_URL = 'https://soul-tune-kappa.vercel.app';
+
+function resolveInitialBackend() {
+  const envUrl = (import.meta.env?.VITE_API_URL || import.meta.env?.VITE_BACKEND_URL || '').trim();
+  if (envUrl) return envUrl.replace(/\/$/, '');
+
+  if (typeof window !== 'undefined') {
+    const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (!isLocal) {
+      return DEPLOYED_BACKEND_URL;
+    }
+  }
+  // On localhost, default to deployed backend if available, with auto-fallback to local
+  return DEPLOYED_BACKEND_URL;
+}
+
+let activeBackend = resolveInitialBackend();
+
+export function getBackendUrl() {
+  return activeBackend;
+}
+
+export function setBackendUrl(url) {
+  activeBackend = url ? url.replace(/\/$/, '') : '';
+}
+
+export const getApiBase = () => (activeBackend ? `${activeBackend}/api/v1` : '/api/v1');
+export const API = '/api/v1';
 let csrfToken = '';
 export function setCsrf(token) { csrfToken = token || ''; }
+
+function getCandidateFallbacks() {
+  const isLocal = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  if (isLocal) {
+    return activeBackend === DEPLOYED_BACKEND_URL
+      ? [LOCAL_BACKEND_URL, '']
+      : [DEPLOYED_BACKEND_URL];
+  }
+  // On deployed domains: try relative rewrite proxy as fallback if direct fails, or direct if relative fails
+  return activeBackend === DEPLOYED_BACKEND_URL ? [''] : [DEPLOYED_BACKEND_URL];
+}
 
 export async function api(path, options = {}) {
   const method = options.method || 'GET';
   const headers = { ...options.headers };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (!['GET', 'HEAD'].includes(method) && csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+  const fetchOptions = {
+    ...options,
+    method,
+    headers,
+    credentials: 'include',
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  };
+
+  const executeFetch = async (backend) => {
+    const base = backend ? `${backend}/api/v1` : '/api/v1';
+    return fetch(`${base}${path}`, fetchOptions);
+  };
+
   let response;
   try {
-    response = await fetch(`${API}${path}`, { ...options, method, headers, credentials: 'include', body: options.body === undefined ? undefined : JSON.stringify(options.body) });
-  } catch { throw new Error('Cannot reach SoulTune. Check your connection and make sure the server is running.'); }
+    response = await executeFetch(activeBackend);
+    // If local Vite proxy returns 503 indicating unreachable backend, trigger fallback
+    if (response.status === 503) {
+      const clone = response.clone();
+      try {
+        const body = await clone.json();
+        if (body?.detail?.includes?.('Backend server is unreachable')) {
+          throw new Error('Backend unreachable');
+        }
+      } catch (err) {
+        if (err.message === 'Backend unreachable') throw err;
+      }
+    }
+  } catch (err) {
+    let fallbackSuccess = false;
+    const fallbacks = getCandidateFallbacks();
+    for (const candidate of fallbacks) {
+      if (candidate === activeBackend) continue;
+      try {
+        response = await executeFetch(candidate);
+        if (response.status !== 503) {
+          activeBackend = candidate;
+          fallbackSuccess = true;
+          break;
+        }
+      } catch {
+        // Continue trying next fallback candidate
+      }
+    }
+    if (!fallbackSuccess) {
+      throw new Error('Cannot reach SoulTune. Check your connection and make sure the server is running.');
+    }
+  }
+
   let result;
   try { result = await response.json(); } catch { result = {}; }
   if (!response.ok) {
@@ -27,7 +113,8 @@ export async function api(path, options = {}) {
 }
 
 export async function downloadPlaylist(id, format) {
-  const response = await fetch(`${API}/playlists/${encodeURIComponent(id)}/export?format=${format}`, { credentials: 'include' });
+  const base = activeBackend ? `${activeBackend}/api/v1` : '/api/v1';
+  const response = await fetch(`${base}/playlists/${encodeURIComponent(id)}/export?format=${format}`, { credentials: 'include' });
   if (!response.ok) throw new Error('Could not export this playlist. Please try again.');
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
@@ -40,7 +127,9 @@ export async function downloadPlaylist(id, format) {
 
 export function safeUrl(value) {
   if (!value || typeof value !== 'string') return '';
-  if (value.startsWith('/api/') && !value.startsWith('//')) return value;
+  if (value.startsWith('/api/') && !value.startsWith('//')) {
+    return activeBackend ? `${activeBackend}${value}` : value;
+  }
   try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) ? url.href : ''; } catch { return ''; }
 }
 

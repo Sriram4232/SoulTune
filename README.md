@@ -397,14 +397,33 @@ SMTP_USERNAME=you@example.com
 SMTP_PASSWORD=                          # App password, not account password
 
 # Security
-COOKIE_SECURE=false                     # Set true behind HTTPS in production
+# Security
+COOKIE_SECURE=false                     # Set true behind HTTPS in production (Render: COOKIE_SECURE=true COOKIE_SAMESITE=none)
 ENVIRONMENT=development
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+ALLOWED_ORIGINS=https://soul-tune-kappa.vercel.app,https://soultune-zctz.onrender.com,http://localhost:5173,http://127.0.0.1:5173
 ```
 
 ---
 
 ## 9. Deployment
+
+### Live Production Services
+
+SoulTune is deployed and live at the following endpoints:
+
+| Service | Provider | Live URL |
+| :--- | :--- | :--- |
+| **Frontend Application** | Vercel | [https://soul-tune-kappa.vercel.app/](https://soul-tune-kappa.vercel.app/) |
+| **Backend API Server** | Render | [https://soultune-zctz.onrender.com](https://soultune-zctz.onrender.com) |
+| **API Health Check** | Render | [https://soultune-zctz.onrender.com/api/v1/health](https://soultune-zctz.onrender.com/api/v1/health) |
+
+#### Smart Backend Resolution (Deployed with Local Fallback)
+The application dynamically resolves the backend:
+- **Deployed Site:** When visited on Vercel (`soul-tune-kappa.vercel.app`), it connects to the deployed Render backend (with edge `/api` proxying via `vercel.json`).
+- **Local Development:** When running locally (`http://localhost:5173`), it connects to the deployed Render backend if available, and seamlessly falls back to your local backend (`http://127.0.0.1:8000`) if the deployed server is asleep or unreachable.
+- **Explicit Override:** You can force a specific target anytime by setting `VITE_API_URL` in `Frontend/.env` (e.g. `VITE_API_URL=http://127.0.0.1:8000`).
+
+---
 
 ### Development (Two Terminals)
 
@@ -421,7 +440,7 @@ cd Frontend
 npm run dev
 ```
 
-Open `http://localhost:5173` — Vite proxies `/api` requests to the backend automatically.
+Open `http://localhost:5173` — Vite automatically handles API proxying and fallback.
 
 ---
 
