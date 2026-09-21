@@ -1,4 +1,4 @@
-export const API = 'https://soultune-zctz.onrender.com//api/v1';
+export const API = 'https://soultune-zctz.onrender.com/api/v1';
 let csrfToken = '';
 export function setCsrf(token) { csrfToken = token || ''; }
 
